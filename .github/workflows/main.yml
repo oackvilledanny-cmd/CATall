@@ -1,0 +1,33 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  id-token: write   # OIDC에 필요
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) GCP 인증 (Workload Identity Federation)
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      # 2) Cloud Run 배포 (소스에서 바로 배포도 가능)
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: your-service-name
+          region: us-central1
+          source: .
+
+      - name: Show URL
+        run: echo "${{ steps.deploy.outputs.url }}"
